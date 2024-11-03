@@ -470,7 +470,7 @@ class Tapper:
                             elif 'error' in start_staking:
                                 logger.error(f"{self.session_name} | Staking failed!Message: {start_staking['error']['message']}")
                         else:
-                            logger.info(f"{self.session_name} | Balance is less than {settings.MIN_BALANCE_BEFORE_STAKE:,}, skipping staking...")
+                            logger.info(f"{self.session_name} | Balance is less than <cyan>{settings.MIN_BALANCE_BEFORE_STAKE:,}</cyan>, skipping staking...")
                                                                         
                 
                 # Claim Ref Section
@@ -490,7 +490,7 @@ class Tapper:
                         date = daily_question.get('date')
                         reward = daily_question.get('reward', 0)
                         
-                        if date == datetime.now().strftime('%Y-%m-%d') and 'answer' not in daily_question:
+                        if date == datetime.now().strftime('%Y-%m-%d') and ('answer' not in daily_question or daily_question.get('answer', {}).get('isCorrect') is False):
                             answer = await self.get_answer()
                             if answer:
                                 logger.info(f"{self.session_name} | Answering daily question: <cyan>{description}</cyan>...")
