@@ -351,7 +351,7 @@ class Tapper:
                 # First time login/Onboarding Section
                 if daily_reward is not None:
                     create_new_acc = await self.onboarding(http_client)
-                    if create_new_acc and create_new_acc == "OK":
+                    if create_new_acc or create_new_acc == "OK":
                         logger.info(f"{self.session_name} | Onboarding success!")
                         await asyncio.sleep(random_sleep_between_action)
                     else:
@@ -506,7 +506,7 @@ class Tapper:
                                 await asyncio.sleep(random_sleep_between_action)
                                 answer_daily = await self.answer_daily_question(http_client, answer)
                                 
-                                if answer_daily and answer_daily.get('isCorrect', False):
+                                if answer_daily and answer_daily.get('isCorrect', False) is True:
                                     logger.success(f"{self.session_name} | Daily question correct! Reward (+{reward})")
                                     await self.get_daily_question(http_client)
                                     await asyncio.sleep(random_sleep_between_action)
