@@ -302,15 +302,25 @@ class Tapper:
         try:
             while True:
                 if check_base_url() is False:
-                    sys.exit("Detected API change! Stopped the bot for safety. Please raise an issue on the GitHub repository.")
+                        logger.warning(f"{self.session_name} | <yellow>API might have changed.Retrying in 10 minutes...</yellow>")
+                        logger.info(f"{self.session_name} | <light-red>Sleep 10m</light-red>")
+                        await asyncio.sleep(600)
+                        continue
                 if settings.NIGHT_SLEEP:
                     await self.night_sleep()
-
+                
                 if http_client.closed:
-                    proxy_conn = ProxyConnector().from_url(self.proxy) if self.proxy else None
-                    http_client = aiohttp.ClientSession(headers=headers, connector=proxy_conn)
-                    if settings.FAKE_USERAGENT:
-                        http_client.headers['User-Agent'] = generate_random_user_agent(device_type='android', browser_type='chrome')
+                    if proxy_conn:
+                        if not proxy_conn.closed:
+                            proxy_conn.close()
+                else:
+                    await http_client.close()
+
+                
+                proxy_conn = ProxyConnector().from_url(self.proxy) if self.proxy else None
+                http_client = aiohttp.ClientSession(headers=headers, connector=proxy_conn)
+                if settings.FAKE_USERAGENT:
+                    http_client.headers['User-Agent'] = generate_random_user_agent(device_type='android', browser_type='chrome')
 
                 current_time = time()
                 if current_time >= token_expiration:
@@ -327,16 +337,16 @@ class Tapper:
                         levelDescription = login.get('levelDescription', [])
                         ref_reward_amount = login.get('balanceInfo',{}).get("referral",{}).get("availableBalance",0)
                         daily_reward = login.get('dailyRewardInfo',None)
-                        if token:
-                            token_expiration = current_time + randint(3400, 3600)
-                            http_client.headers['Authorization'] = f"Bearer {token}"
-                            logger.info(f"{self.session_name} | <green>Login Successful!</green>")
-                        else:
-                            logger.error(f"{self.session_name} | <red>Login failed!</red>")
-                            logger.info(f"{self.session_name} | <red>Sleep 10-20 minutes</red>")
-                            await asyncio.sleep(randint(600, 1200))
-                            continue
-                    await asyncio.sleep(random_sleep_between_action)
+                if token:
+                    token_expiration = current_time + randint(3400, 3600)
+                    http_client.headers['Authorization'] = f"Bearer {token}"
+                    logger.info(f"{self.session_name} | <green>Login Successful!</green>")
+                else:
+                    logger.error(f"{self.session_name} | <red>Login failed!</red>")
+                    logger.info(f"{self.session_name} | <red>Sleep 10-20 minutes</red>")
+                    await asyncio.sleep(randint(600, 1200))
+                    continue
+                await asyncio.sleep(random_sleep_between_action)
                 
                 
                 # First time login/Onboarding Section
@@ -353,11 +363,14 @@ class Tapper:
                 # Farm Section
                 if settings.AUTO_FARM:
                     farming_info = await self.farming_info(http_client)
+                    
                     balance = int(float(farming_info.get('balance', 0)))
                     farming_reward = int(farming_info.get('farmingReward', 0))
                     farming_duration = int(farming_info.get('farmingDurationInSec', 0))
                     multiplier = farming_info.get('multiplier', 0)
+                    
                     farming_started = farming_info.get('activeFarmingStartedAt', None)
+                    is_flagged = False
 
                     logger.info(
                         f"{self.session_name} | <cyan>Balance:</cyan> {balance:,} | <cyan>Farming Reward:</cyan> {farming_reward} | "
@@ -368,25 +381,31 @@ class Tapper:
                         local_farming_start_time = convert_to_local_and_unix(farming_started)
                         farming_end_time = local_farming_start_time + farming_duration
 
-                    if farming_started and farming_end_time < current_time:
-                        claim = await self.claim_farm_reward(http_client)
-                        if claim:
-                            logger.success(f"{self.session_name} | Farming reward claimed!")
-                            await asyncio.sleep(randint(3,5))
-                            start = await self.start_farming(http_client)
-                            if start:
-                                farming_end_time = current_time + 14400 + additional_sleep
-                                logger.success(f"{self.session_name} | Farming started! Next claim at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>")
+                        if farming_end_time < current_time:
+                            claim = await self.claim_farm_reward(http_client)
+                            if claim:
+                                logger.success(f"{self.session_name} | Farming reward claimed!")
+                                await asyncio.sleep(randint(3, 5))
+                                start = await self.start_farming(http_client)
+                                if start:
+                                    farming_end_time = current_time + 14400 + additional_sleep
+                                    logger.success(
+                                        f"{self.session_name} | Farming started! Next claim at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>"
+                                    )
+                                    
+                        elif farming_end_time > current_time:
+                            logger.info(
+                                f"{self.session_name} | Farming in progress, will end at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>"
+                            )
                             
-                    elif farming_started and farming_end_time > current_time:
-                        logger.info(f"{self.session_name} | Farming in progress, will end at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>")
-
                     elif not farming_started:
                         start = await self.start_farming(http_client)
                         if start:
                             farming_end_time = current_time + 14400 + additional_sleep
-                            logger.success(f"{self.session_name} | Farming started! Next claim at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>")
-                 
+                            logger.success(
+                                f"{self.session_name} | Farming started! Next claim at <cyan>{datetime.fromtimestamp(farming_end_time).strftime('%I:%M %p')}</cyan>"
+                            )
+                            
                 # Do task Section           
                 if settings.AUTO_TASK:
                     tasks = await self.get_tasks(http_client)
@@ -512,6 +531,7 @@ class Tapper:
                         sleep_time = farming_end_time - current_time
                         logger.info(f'{self.session_name} | Sleep <light-red>{round(sleep_time / 60, 2)}m.</light-red>')
                         await asyncio.sleep(sleep_time)
+                        
                 await http_client.close()
                 if proxy_conn and not proxy_conn.closed:
                     proxy_conn.close()
