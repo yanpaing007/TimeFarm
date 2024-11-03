@@ -1,8 +1,6 @@
 [![Static Badge](https://img.shields.io/badge/Telegram-Bot%20Link-Link?style=for-the-badge&logo=Telegram&logoColor=white&logoSize=auto&color=blue)](https://t.me/TimeFarmCryptoBot?start=gWFElxEJG7L8PDye)
 > [!NOTE]
-> I made this bot to behave like human interacting instead of bot by adding several time between each farm reward claim and stake claim time,this may have slightly impact on our reward but will have less chance of getting banned
-> [!IMPORTANT]
-> I suggest don't turn oof important feature like NIGHT_SLEEP
+> I made this bot to behave like human interacting instead of bot by adding several time between each farm reward claim and stake claim time,this may have slightly impact on our reward but will have less chance of getting banned and I suggest don't turn off important feature like NIGHT_SLEEP
 
 ## Recommendation before use
 
