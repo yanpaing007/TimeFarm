@@ -97,7 +97,7 @@ class Tapper:
                     try:
                         await self.tg_client.send_message("TimeFarmCryptoBot", f"/start {ref_id}")
                     except FloodWait as e:
-                        print(f"Flood wait error, need to wait for {e.x} seconds.")
+                        logger.info(f"{self.session_name} | Flood wait error, need to wait for {e.x} seconds.")
                         await asyncio.sleep(e.x)
 
             while True:
@@ -348,17 +348,12 @@ class Tapper:
                     continue
                 await asyncio.sleep(random_sleep_between_action)
                 
-                
                 # First time login/Onboarding Section
                 if daily_reward is not None:
                     create_new_acc = await self.onboarding(http_client)
                     if create_new_acc or create_new_acc == "OK":
                         logger.info(f"{self.session_name} | Onboarding success!")
                         await asyncio.sleep(random_sleep_between_action)
-                    else:
-                        logger.error(f"{self.session_name} | Failed to create new TimeFarm account!")
-                        await asyncio.sleep(randint(600, 1200))
-                        continue
                     
                 # Farm Section
                 if settings.AUTO_FARM:
@@ -484,7 +479,6 @@ class Tapper:
                             await asyncio.sleep(random_sleep_between_action)
                             start_staking = await self.stake_balance(http_client, stake_amount, "1")
                             if start_staking:
-                                print(start_staking)
                                 logger.success(f"{self.session_name} | Staking successful with amount <cyan>{format(stake_amount, ',')}</cyan>!")
                             elif 'error' in start_staking:
                                 logger.error(f"{self.session_name} | Staking failed!Message: {start_staking['error']['message']}")
