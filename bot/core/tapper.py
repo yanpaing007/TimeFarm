@@ -490,10 +490,9 @@ class Tapper:
                 # Claim Ref Section
                 if settings.AUTO_CLAIM_REF and ref_reward_amount > 0:
                     ref_reward = await self.claim_ref_reward(http_client)
-                    if ref_reward:
+                    if ref_reward == "OK":
                         logger.success(f"{self.session_name} | Referral reward claimed, +{ref_reward_amount}")
-                    else:
-                        logger.info(f"{self.session_name} | Referral reward already claimed! {ref_reward}")
+                        await self.get_balance(http_client)
                         
                 
                 
