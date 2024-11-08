@@ -268,7 +268,7 @@ class Tapper:
         end_hour = randint(settings.NIGHT_SLEEP_TIME[1][0], settings.NIGHT_SLEEP_TIME[1][1])
 
         if now.hour >= start_hour or now.hour < end_hour:
-            wake_up_time = now.replace(hour=end_hour, minute=0, second=0, microsecond=0)
+            wake_up_time = now.replace(hour=end_hour, minute=randint(0,59), second=randint(0,59), microsecond=0)
             if now.hour >= start_hour:
                 wake_up_time += timedelta(days=1)
             sleep_duration = (wake_up_time - now).total_seconds()
