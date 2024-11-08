@@ -327,6 +327,7 @@ class Tapper:
                     if token_expiration != 0:
                         logger.info(f"{self.session_name} | <yellow>Token expired, refreshing...</yellow>")
                     init_data = await self.get_tg_web_data()
+                    
         
                     login = await self.login(http_client, init_data)
                     if login:
@@ -334,7 +335,7 @@ class Tapper:
                         level = login.get('info', {}).get('level', 0)
                         multiplier = login.get('multiplier', 1)
                         is_flagged = login.get('FlaggedByAdmin', False)
-                        levelDescription = login.get('levelDescription', [])
+                        levelDescription = login.get('levelDescriptions', [])
                         ref_reward_amount = login.get('balanceInfo',{}).get("referral",{}).get("availableBalance",0)
                         daily_reward = login.get('dailyRewardInfo',None)
                 if token:
@@ -431,19 +432,19 @@ class Tapper:
                     if next_level <= max_level_bot:
                             for level_data in levelDescription:
                                 level_num = int(level_data.get('level', 0))
+                                if level_num == 0:
+                                    continue
                                 if next_level == level_num:
                                     level_price = int(level_data.get('price', 0))
                                     if level_price <= balance:
-                                        logger.info(f"{self.session_name} | Sleeping for {random_sleep_between_action} before upgrading to level {next_level} with {level_price:,}...")
+                                        logger.info(f"{self.session_name} | Sleeping for <cyan>{random_sleep_between_action}</cyan> seconds before upgrading to <green>level {next_level}</green> with <cyan>price:</cyan>{level_price:,}")
                                         await asyncio.sleep(random_sleep_between_action)
                                         upgrade = await self.upgrade_clock(http_client)
                                         
                                         if upgrade and upgrade.get('balance', 0):
                                             balance_after_upgrade = upgrade.get('balance', 0)
                                             if balance_after_upgrade:
-                                                logger.success(f"{self.session_name} | Upgraded to level {next_level}! Balance: <cyan>{balance_after_upgrade}</cyan>")
-                                else:
-                                    logger.info(f"{self.session_name} | Not enough balance to upgrade to level {next_level} with {level_price:,}")
+                                                logger.success(f"{self.session_name} | Upgraded to <green>level {next_level}</green>! <cyan>Balance:</cyan> {balance_after_upgrade:,}")
                             
                 # Stake Balance Section            
                 if settings.AUTO_STAKE:
@@ -487,10 +488,12 @@ class Tapper:
                                                                         
                 
                 # Claim Ref Section
-                if settings.AUTO_CLAIM_REF and ref_reward_amount and ref_reward_amount > 0:
+                if settings.AUTO_CLAIM_REF and ref_reward_amount > 0:
                     ref_reward = await self.claim_ref_reward(http_client)
                     if ref_reward:
                         logger.success(f"{self.session_name} | Referral reward claimed, +{ref_reward_amount}")
+                    else:
+                        logger.info(f"{self.session_name} | Referral reward already claimed! {ref_reward}")
                         
                 
                 
